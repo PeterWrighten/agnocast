@@ -21,11 +21,15 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+<<<<<<< HEAD
   <depend>ament_index_cpp</depend>
   <depend>libgoogle-glog-dev</depend>
   <depend>liblttng-ust-dev</depend>
   <depend>message_filters</depend>
   <depend>rcl_yaml_param_parser</depend>
+=======
+  <depend>rcl_interfaces</depend>
+>>>>>>> 71a28b4 (feat(test): add unit test for --enable-rosout-logs)
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>rosgraph_msgs</depend>
