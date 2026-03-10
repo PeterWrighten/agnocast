@@ -18,6 +18,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(rcl_yaml_param_parser REQUIRED)
@@ -40,7 +41,7 @@ add_library(agnocast SHARED
   src/agnocast_single_threaded_executor.cpp src/agnocast_multi_threaded_executor.cpp
   src/agnocast_callback_isolated_executor.cpp
   src/agnocast_tracepoint_wrapper.c src/agnocast_client.cpp
-  src/node/agnocast_node.cpp src/node/agnocast_arguments.cpp src/node/agnocast_context.cpp src/node/agnocast_signal_handler.cpp
+  src/node/agnocast_node.cpp src/node/agnocast_arguments.cpp src/node/agnocast_context.cpp src/node/agnocast_rosout.cpp src/node/agnocast_signal_handler.cpp
   src/node/agnocast_only_executor.cpp src/node/agnocast_only_single_threaded_executor.cpp src/node/agnocast_only_multi_threaded_executor.cpp
   src/node/agnocast_only_callback_isolated_executor.cpp src/node/agnocast_parameter_service.cpp
   src/cie_client_utils.cpp
@@ -49,7 +50,7 @@ add_library(agnocast SHARED
   src/bridge/performance/agnocast_performance_bridge_ipc_event_loop.cpp src/bridge/performance/agnocast_performance_bridge_loader.cpp src/bridge/performance/agnocast_performance_bridge_manager.cpp
   src/node/tf2/transform_broadcaster.cpp src/node/tf2/static_transform_broadcaster.cpp)
 
-ament_target_dependencies(agnocast rclcpp agnocast_cie_thread_configurator rosgraph_msgs agnocast_cie_config_msgs ament_index_cpp message_filters tf2 tf2_ros tf2_msgs geometry_msgs)
+ament_target_dependencies(agnocast rcl_interfaces rclcpp agnocast_cie_thread_configurator rosgraph_msgs agnocast_cie_config_msgs ament_index_cpp message_filters tf2 tf2_ros tf2_msgs geometry_msgs)
 
 target_link_libraries(agnocast
   ${rcl_yaml_param_parser_LIBRARIES}
@@ -138,7 +139,8 @@ if(BUILD_TESTING)
     test/unit/test_agnocast_executors.cpp
     test/unit/test_agnocast_epoll_update.cpp
     test/unit/test_node_topics.cpp
-    test/unit/test_cie_client_utils.cpp)
+    test/unit/test_cie_client_utils.cpp
+    test/unit/test_agnocast_context.cpp)
   target_include_directories(test_unit_${PROJECT_NAME} PRIVATE include src)
   target_link_libraries(test_unit_${PROJECT_NAME} agnocast)
   ament_target_dependencies(test_unit_${PROJECT_NAME} std_msgs)
