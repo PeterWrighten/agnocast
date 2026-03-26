@@ -30,6 +30,7 @@ find_package(rosgraph_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(glog REQUIRED)
+find_package(spdlog REQUIRED)
 
 add_library(agnocast SHARED
   src/agnocast.cpp src/agnocast_utils.cpp src/agnocast_publisher.cpp src/agnocast_subscription.cpp
@@ -51,6 +52,7 @@ target_link_libraries(agnocast
   ${rcl_yaml_param_parser_LIBRARIES}
   ${tracetools_LIBRARIES}
   ${LTTNGUST_LIBRARIES}
+  spdlog::spdlog
 )
 
 target_include_directories(agnocast PUBLIC

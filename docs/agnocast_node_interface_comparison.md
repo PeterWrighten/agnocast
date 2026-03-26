@@ -200,8 +200,8 @@ This provides the same argument parsing functionality as rcl.
 | `--` (end marker) | ✓ | **Full Support** | - | ROS arguments end marker |
 | `-r node:old:=new` | ✓ | **Full Support** | - | Node-specific remapping |
 | `--log-level` | ✓ | **Full Support** | - | Set log level |
-| `--enable-rosout-logs` | - | **Supportable** | TBD | Enable logging to rosout |
-| `--disable-external-lib-logs` | - | **Default** | - | Disable external library logs |
+| `--enable-rosout-logs` | ✓ | **Full Support** | - | Enable logging to rosout |
+| `--disable-external-lib-logs` | ✓ | **Full Support** | - | Disable external library logs |
 | `--disable-stdout-logs` | ✓ | **Full Support** | - | Disable stdout logging |
 | `-e` (enclave) | ✗ | **Unsupported** | - | Specify security enclave |
 
