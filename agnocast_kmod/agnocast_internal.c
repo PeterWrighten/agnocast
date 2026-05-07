@@ -305,9 +305,7 @@ void agnocast_process_exit_cleanup(const pid_t pid)
       agnocast_get_size_pub_info_htable(wrapper) == 0 &&
       agnocast_get_size_sub_info_htable(wrapper) == 0) {
       hash_del(&wrapper->node);
-      if (wrapper->key) {
-        kfree(wrapper->key);
-      }
+      kfree(wrapper->key);
       kfree(wrapper);
     }
   }
@@ -317,9 +315,7 @@ void agnocast_process_exit_cleanup(const pid_t pid)
   {
     if (br_info->pid == pid) {
       hash_del(&br_info->node);
-      if (br_info->topic_name) {
-        kfree(br_info->topic_name);
-      }
+      kfree(br_info->topic_name);
       kfree(br_info);
     }
   }
