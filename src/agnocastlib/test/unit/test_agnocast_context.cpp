@@ -8,6 +8,8 @@
 // =========================================
 // agnocast::Context --disable-stdout-logs tests
 // =========================================
+// Note: despite the flag name, rcutils/rcl's default console handler routes all output to stderr
+// when stdout is not a TTY (as is the case inside a test process). Tests therefore capture stderr.
 
 class AgnocastContextStdoutLogsTest : public ::testing::Test
 {
@@ -35,7 +37,7 @@ TEST_F(AgnocastContextStdoutLogsTest, disable_stdout_logs_suppresses_console_out
 
   testing::internal::CaptureStderr();
   RCUTILS_LOG_INFO_NAMED("agnocast_test", "test message");
-  fflush(stdout);
+
   const std::string output = testing::internal::GetCapturedStderr();
 
   EXPECT_TRUE(output.empty()) << "Expected no stdout output with --disable-stdout-logs, got: "
@@ -51,7 +53,7 @@ TEST_F(AgnocastContextStdoutLogsTest, no_flag_emits_console_output)
 
   testing::internal::CaptureStderr();
   RCUTILS_LOG_INFO_NAMED("agnocast_test", "test message");
-  fflush(stdout);
+
   const std::string output = testing::internal::GetCapturedStderr();
 
   EXPECT_FALSE(output.empty()) << "Expected stdout output without --disable-stdout-logs";
@@ -67,7 +69,7 @@ TEST_F(AgnocastContextStdoutLogsTest, flag_outside_ros_args_is_ignored)
 
   testing::internal::CaptureStderr();
   RCUTILS_LOG_INFO_NAMED("agnocast_test", "test message");
-  fflush(stdout);
+
   const std::string output = testing::internal::GetCapturedStderr();
 
   EXPECT_FALSE(output.empty()) << "Flag outside --ros-args must be ignored; expected stdout output";
@@ -84,7 +86,7 @@ TEST_F(AgnocastContextStdoutLogsTest, flag_after_double_dash_terminator_is_ignor
 
   testing::internal::CaptureStderr();
   RCUTILS_LOG_INFO_NAMED("agnocast_test", "test message");
-  fflush(stdout);
+
   const std::string output = testing::internal::GetCapturedStderr();
 
   EXPECT_FALSE(output.empty()) << "Flag after -- must be ignored; expected stdout output";
