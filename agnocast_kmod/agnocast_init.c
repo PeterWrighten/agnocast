@@ -16,7 +16,7 @@ static char * agnocast_devnode(struct device * dev, umode_t * mode)
   return NULL;
 }
 
-static struct file_operations fops = {
+static const struct file_operations fops = {
   .owner = THIS_MODULE,
   .unlocked_ioctl = agnocast_ioctl,
 };
