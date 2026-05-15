@@ -1,6 +1,7 @@
 #include "agnocast/node/agnocast_context.hpp"
 
 #include "agnocast/agnocast_tracepoint_wrapper.h"
+#include "agnocast/node/agnocast_rosout.hpp"
 #include "agnocast_signal_handler.hpp"
 
 #include <rcl/arguments.h>
@@ -92,6 +93,7 @@ void shutdown()
 
   SignalHandler::notify_all_executors();
   SignalHandler::uninstall();
+  shutdown_rosout_handler();
 
   rcl_ret_t ret = rcl_logging_fini();
   if (ret != RCL_RET_OK) {

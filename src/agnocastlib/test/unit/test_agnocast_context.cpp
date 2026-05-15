@@ -1,4 +1,5 @@
 #include "agnocast/node/agnocast_context.hpp"
+#include "agnocast/node/agnocast_rosout.hpp"
 
 #include <gtest/gtest.h>
 #include <rcl/logging.h>
@@ -148,4 +149,46 @@ TEST_F(AgnocastContextRosoutTest, flag_after_double_dash_is_ignored)
   ctx.init(argc, argv);
 
   EXPECT_FALSE(ctx.is_rosout_enabled());
+}
+
+// =========================================
+// shutdown_rosout_handler tests
+// =========================================
+
+class ShutdownRosoutHandlerTest : public ::testing::Test
+{
+protected:
+  void SetUp() override
+  {
+    original_handler_ = rcutils_logging_get_output_handler();
+    // Ensure a clean slate before each test
+    agnocast::shutdown_rosout_handler();
+  }
+
+  void TearDown() override
+  {
+    agnocast::shutdown_rosout_handler();
+    rcutils_logging_set_output_handler(original_handler_);
+  }
+
+  rcutils_logging_output_handler_t original_handler_;
+};
+
+TEST_F(ShutdownRosoutHandlerTest, shutdown_with_no_prior_setup_is_safe)
+{
+  // Should not crash or assert when called with an empty map and no handler installed
+  EXPECT_NO_THROW(agnocast::shutdown_rosout_handler());
+}
+
+TEST_F(ShutdownRosoutHandlerTest, shutdown_resets_publisher_count_to_zero)
+{
+  // publisher count starts at zero after a clean shutdown
+  EXPECT_EQ(agnocast::get_rosout_publisher_count(), 0u);
+}
+
+TEST_F(ShutdownRosoutHandlerTest, repeated_shutdown_calls_are_idempotent)
+{
+  agnocast::shutdown_rosout_handler();
+  EXPECT_NO_THROW(agnocast::shutdown_rosout_handler());
+  EXPECT_EQ(agnocast::get_rosout_publisher_count(), 0u);
 }
