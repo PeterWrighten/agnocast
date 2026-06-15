@@ -40,6 +40,9 @@ void send_standard_service_bridge_registration(
 template <typename MessageT>
 void send_performance_pubsub_bridge_registration(
   const std::string & topic_name, topic_local_id_t id, BridgeDirection direction);
+inline void send_performance_pubsub_bridge_registration_by_type_name(
+  const std::string & topic_name, topic_local_id_t id, const std::string & message_type_name,
+  BridgeDirection direction);
 template <typename ServiceT>
 void send_performance_service_bridge_registration(
   const std::string & service_name, BridgeDirection direction,
@@ -54,6 +57,23 @@ void register_pubsub_bridge_core(
     send_standard_pubsub_bridge_registration<MessageT>(topic_name, id, direction);
   } else if (bridge_mode == BridgeMode::Performance) {
     send_performance_pubsub_bridge_registration<MessageT>(topic_name, id, direction);
+  }
+}
+
+inline void register_pubsub_bridge_by_type_name(
+  const std::string & topic_name, topic_local_id_t id, const std::string & message_type,
+  BridgeDirection direction)
+{
+  auto bridge_mode = get_bridge_mode();
+  if (bridge_mode == BridgeMode::Standard) {
+    static const auto logger = rclcpp::get_logger("agnocast_bridge_registrar");
+    RCLCPP_WARN_ONCE(
+      logger,
+      "GenericSubscription does not support standard-mode bridge. "
+      "Set AGNOCAST_BRIDGE_MODE=performance to enable bridging.");
+  } else if (bridge_mode == BridgeMode::Performance) {
+    send_performance_pubsub_bridge_registration_by_type_name(
+      topic_name, id, message_type, direction);
   }
 }
 
@@ -407,9 +427,16 @@ template <typename MessageT>
 void send_performance_pubsub_bridge_registration(
   const std::string & topic_name, topic_local_id_t id, BridgeDirection direction)
 {
-  static const auto logger = rclcpp::get_logger("agnocast_performance_bridge_registrar");
-
   const std::string message_type_name = rosidl_generator_traits::name<MessageT>();
+  send_performance_pubsub_bridge_registration_by_type_name(
+    topic_name, id, message_type_name, direction);
+}
+
+inline void send_performance_pubsub_bridge_registration_by_type_name(
+  const std::string & topic_name, topic_local_id_t id, const std::string & message_type_name,
+  BridgeDirection direction)
+{
+  static const auto logger = rclcpp::get_logger("agnocast_performance_bridge_registrar");
 
   auto [msg, reason] =
     BridgeRegistrationMsgBuilder(BridgeRegistrationMsgBuilder::Mode::Performance, logger)
