@@ -553,15 +553,19 @@ int agnocast_ioctl_get_version(struct ioctl_get_version_args * ioctl_ret)
   return 0;
 }
 
-static bool has_alive_performance_bridge_manager(const struct ipc_namespace * ipc_ns)
+// A performance bridge manager is per-(ipc_ns, domain): its MQ name carries the
+// domain suffix, so each domain needs its own manager. Gate on the domain too,
+// otherwise a manager in one domain would suppress spawning in another.
+static bool has_alive_performance_bridge_manager(
+  const struct ipc_namespace * ipc_ns, const uint32_t domain_id)
 {
   struct process_info * proc_info;
   int bkt;
   hash_for_each(proc_info_htable, bkt, proc_info, node)
   {
     if (
-      ipc_eq(ipc_ns, proc_info->ipc_ns) && proc_info->is_performance_bridge_manager &&
-      !proc_info->exited) {
+      ipc_eq(ipc_ns, proc_info->ipc_ns) && proc_info->domain_id == domain_id &&
+      proc_info->is_performance_bridge_manager && !proc_info->exited) {
       return true;
     }
   }
@@ -582,7 +586,8 @@ int agnocast_ioctl_add_process(
     goto unlock;
   }
   ioctl_ret->ret_unlink_daemon_exist = (get_process_num(ipc_ns) > 0);
-  ioctl_ret->ret_performance_bridge_daemon_exist = has_alive_performance_bridge_manager(ipc_ns);
+  ioctl_ret->ret_performance_bridge_daemon_exist =
+    has_alive_performance_bridge_manager(ipc_ns, domain_id);
 
   if (is_performance_bridge_manager && ioctl_ret->ret_performance_bridge_daemon_exist) {
     goto unlock;
@@ -1417,6 +1422,16 @@ int agnocast_ioctl_get_topic_list(
       goto unlock;
     }
 
+    if (topic_list_args->domain_id_buffer_addr) {
+      uint32_t domain_id = wrapper->domain_id;
+      uint32_t __user * domain_id_buffer =
+        (uint32_t __user *)u64_to_user_ptr(topic_list_args->domain_id_buffer_addr);
+      if (copy_to_user(domain_id_buffer + topic_num, &domain_id, sizeof(domain_id))) {
+        ret = -EFAULT;
+        goto unlock;
+      }
+    }
+
     topic_num++;
   }
 
@@ -1560,7 +1575,7 @@ int agnocast_ioctl_get_topic_subscriber_info(
 
   down_read(&global_htables_rwsem);
 
-  struct topic_wrapper * wrapper = find_topic_for_current(topic_name, ipc_ns);
+  struct topic_wrapper * wrapper = find_topic(topic_name, ipc_ns, topic_info_args->domain_id);
   if (!wrapper) {
     up_read(&global_htables_rwsem);
     return 0;
@@ -1646,7 +1661,7 @@ int agnocast_ioctl_get_topic_publisher_info(
 
   down_read(&global_htables_rwsem);
 
-  struct topic_wrapper * wrapper = find_topic_for_current(topic_name, ipc_ns);
+  struct topic_wrapper * wrapper = find_topic(topic_name, ipc_ns, topic_info_args->domain_id);
   if (!wrapper) {
     up_read(&global_htables_rwsem);
     return 0;
@@ -2132,6 +2147,20 @@ static int get_process_num(const struct ipc_namespace * ipc_ns)
   return count;
 }
 
+static int get_process_num_in_domain(const struct ipc_namespace * ipc_ns, const uint32_t domain_id)
+{
+  int count = 0;
+  struct process_info * proc_info;
+  int bkt_proc_info;
+  hash_for_each(proc_info_htable, bkt_proc_info, proc_info, node)
+  {
+    if (ipc_eq(ipc_ns, proc_info->ipc_ns) && proc_info->domain_id == domain_id) {
+      count++;
+    }
+  }
+  return count;
+}
+
 int agnocast_ioctl_notify_bridge_shutdown(const pid_t pid)
 {
   down_write(&global_htables_rwsem);
@@ -2148,8 +2177,11 @@ int agnocast_ioctl_check_and_request_bridge_shutdown(
   struct ioctl_check_and_request_bridge_shutdown_args * ioctl_ret)
 {
   down_write(&global_htables_rwsem);
-  // Request shutdown if there is no other process excluding poll_for_unlink.
-  if (get_process_num(ipc_ns) <= 1) {
+  // A performance bridge manager is per (ipc_ns, domain), so it must shut down once its
+  // own domain is empty -- counting the whole namespace would keep it alive while an
+  // unrelated domain is busy. The manager itself is the remaining process (count == 1),
+  // and poll_for_unlink is not registered here, so it is excluded.
+  if (get_process_num_in_domain(ipc_ns, get_process_domain_id(pid)) <= 1) {
     struct process_info * proc_info = agnocast_find_process_info(pid);
     if (proc_info) {
       proc_info->is_performance_bridge_manager = false;
